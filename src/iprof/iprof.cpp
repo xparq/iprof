@@ -56,7 +56,8 @@ std::ostream& operator<<(std::ostream& os, const InternalProfiler::Stats& stats)
       if (si.first.capacity() < si.first.size())
          os << "/...(" << si.first.size() - si.first.capacity() << ")";
       os << ": " << MICRO_SECS(si.second.totalTime) / float(si.second.numVisits)
-         << " (" << MICRO_SECS(si.second.totalTime) << " / " << si.second.numVisits << ")\n";
+         << "μs (" << MICRO_SECS(si.second.totalTime)
+         << " / " << si.second.numVisits << ")\n";
    }
    return os;
 }
