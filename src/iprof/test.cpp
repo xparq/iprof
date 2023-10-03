@@ -72,33 +72,33 @@ int main()
 
    cout << "Hi ;)\n" << endl;
 
-   cout << "sizeof(InternalProfiler::Tree): " << sizeof(InternalProfiler::Tree)
+   cout << "sizeof(iProf::Stack): " << sizeof(iProf::Stack)
         << " bytes" << endl;
 
    cout << "\nAnd the lucky double is: " << heavyCalc() << endl;
 
-   InternalProfiler::aggregateEntries();
+   iProf::aggregateEntries();
    cout << "\nThe profiler stats so far:\n"
            "WHAT: AVG_TIME (TOTAL_TIME / TIMES_EXECUTED)"
            "\nAll times in micro seconds\n"
-        << InternalProfiler::stats << endl;
+        << iProf::stats << endl;
 
    cout << "Second lucky double is " << heavyCalc() << endl;
 
-   InternalProfiler::aggregateEntries();
+   iProf::aggregateEntries();
    cout << "\nThe profiler stats after the second run:\n"
-        << InternalProfiler::stats << endl;
+        << iProf::stats << endl;
 
 #ifndef DISABLE_IPROF_MULTITHREAD
    cout << "Let's try a multithread environment" << endl;
 
-   InternalProfiler::addThisThreadEntriesToAllThreadStats();
+   iProf::addThisThreadEntriesToAllThreadStats();
 
    auto load = []
    {
       heavyCalc();
-      InternalProfiler::aggregateEntries();
-      InternalProfiler::addThisThreadEntriesToAllThreadStats();
+      iProf::aggregateEntries();
+      iProf::addThisThreadEntriesToAllThreadStats();
    };
 
    auto futureLucky = std::async(load);
@@ -109,9 +109,9 @@ int main()
 
    {
       // In case some threads would still be adding their entries to all thread stats:
-      // std::lock_guard<std::mutex> bouncer(InternalProfiler::allThreadStatLock);
+      // std::lock_guard<std::mutex> bouncer(iProf::allThreadStatLock);
       cout << "\nThe profiler all thread stats:\n"
-           << InternalProfiler::allThreadStats << endl;
+           << iProf::allThreadStats << endl;
    }
 #else
    cout << "iprof multithread disabled\n" << endl;

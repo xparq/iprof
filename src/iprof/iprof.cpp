@@ -3,9 +3,9 @@
 
 #include "iprof.hpp"
 
-namespace InternalProfiler
+namespace iProf
 {
-iprof_thread_local Tree tree;
+iprof_thread_local Stack scopes;
 iprof_thread_local std::vector<RawEntry> entries;
 iprof_thread_local Stats stats;
 
@@ -26,7 +26,7 @@ void aggregateEntries()
          unfinished.emplace_back(ei);
          continue;
       }
-      Stat& s = stats[ei.tree];
+      Totals& s = stats[ei.scopes];
       ++s.numVisits;
       s.totalTime += ei.end - ei.start;
    }
@@ -45,9 +45,9 @@ void addThisThreadEntriesToAllThreadStats()
    lastStats = stats;
 }
 #endif
-}
+} // namespace iProf
 
-std::ostream& operator<<(std::ostream& os, const InternalProfiler::Stats& stats)
+std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats)
 {
    for (auto si : stats)
    {

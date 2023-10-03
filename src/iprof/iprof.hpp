@@ -30,11 +30,11 @@
 #define iprof_thread_local thread_local
 #endif
 
-namespace InternalProfiler
+namespace iProf
 {
 /// A faster (for storing within a vector) but limited vector<const char *>
 #ifndef DISABLE_IPROF_OPTIM
-class Tree
+class Stack
 {
 public:
    typedef uint16_t size_type;
@@ -44,8 +44,8 @@ protected:
    static const int MAX_DEPTH = 15;
    // Should make sizeof(RawEntry) == 64 (15*4+2+2) for 32bit systems
    // and compilers will align it to 128 for 64 bit systems.
-   value_type tree[MAX_DEPTH];
-   size_type fill = 0;
+   value_type array[MAX_DEPTH];
+   size_type tail = 0;
    size_type osize = 0;  ///< size with overflow
 
 public:
@@ -56,34 +56,34 @@ public:
 
    size_type capacity() const
    {
-      return fill;
+      return tail;
    }
 
-   void push_back(value_type node)
+   void push_back(value_type item)
    {
       ++osize;
-      if (fill >= MAX_DEPTH)
+      if (tail >= MAX_DEPTH)
          return;
-      tree[fill++] = node;
+      array[tail++] = item;
       return;
    }
 
    void pop_back()
    {
       if (--osize < MAX_DEPTH)
-         --fill;
+         --tail;
    }
 
-   const value_type* begin() const { return tree; }
-   const value_type* end() const { return tree + fill; }
-   const value_type& back() const { return *(tree + fill - 1); }
+   const value_type* begin() const { return array; }
+   const value_type* end() const { return array + tail; }
+   const value_type& back() const { return *(array + tail - 1); }
 
-   bool operator==(const Tree& a) const
+   bool operator==(const Stack& a) const
    {
-      return size() == a.size() && 0 == memcmp(tree, a.tree, sizeof(value_type) * fill);
+      return size() == a.size() && 0 == memcmp(array, a.array, sizeof(value_type) * tail);
    }
 
-   bool operator<(const Tree& a) const
+   bool operator<(const Stack& a) const
    {
       if (size() < a.size())
          return true;
@@ -95,31 +95,31 @@ public:
       // not guaranteed under the specification, thus inline functions
       // might be a problem for this, and might be threated as different
       // functions when looked at from different translation units.
-      return memcmp(tree, a.tree, sizeof(value_type) * fill) < 0;
+      return memcmp(array, a.array, sizeof(value_type) * tail) < 0;
    }
-};
+}; // class Stack
 #else
-typedef std::vector<const char*> Tree;
+typedef std::vector<const char*> Stack;
 #endif
 
 struct RawEntry
 {
-   Tree tree;
+   Stack scopes;
    HighResClock::time_point start;
    HighResClock::time_point end;
 };
 
-struct Stat
+struct Totals
 {
    HighResClock::duration totalTime = HighResClock::duration::zero();
    size_t numVisits = 0;
-   Stat& operator+=(const Stat& a)
+   Totals& operator+=(const Totals& a)
    {
       totalTime += a.totalTime;
       numVisits += a.numVisits;
       return *this;
    }
-   Stat& operator-=(const Stat& a)
+   Totals& operator-=(const Totals& a)
    {
       totalTime -= a.totalTime;
       numVisits -= a.numVisits;
@@ -127,9 +127,9 @@ struct Stat
    }
 };
 
-extern iprof_thread_local Tree tree;
+extern iprof_thread_local Stack scopes;
 extern iprof_thread_local std::vector<RawEntry> entries;
-typedef std::map<Tree, Stat> Stats;   // we lack hashes for unordered
+typedef std::map<Stack, Totals> Stats;   // we lack hashes for unordered
 extern iprof_thread_local Stats stats;
 
 #ifndef DISABLE_IPROF_MULTITHREAD
@@ -140,31 +140,30 @@ extern Stats allThreadStats;
 void aggregateEntries();
 void addThisThreadEntriesToAllThreadStats();
 
-inline void Begin(const char* node)
+inline void Begin(const char* tag)
 {
-   tree.push_back(node);
+   scopes.push_back(tag);
    auto now = HighResClock::now();
-   RawEntry re{tree, now, now - HighResClock::duration(1)};
-   entries.emplace_back(re);
+   entries.emplace_back(RawEntry{scopes, now, now - HighResClock::duration(1)});
 }
 inline void End()
 {
-   auto s = tree.size();
+   auto s = scopes.size();
    auto rei = entries.rbegin();
-   while (rei->tree.size() != s)
+   while (rei->scopes.size() != s)
       ++rei;
    rei->end = HighResClock::now();
-   tree.pop_back();
+   scopes.pop_back();
 }
 
 struct ScopedMeasure
 {
-   ScopedMeasure(const char* node) { Begin(node); }
+   ScopedMeasure(const char* tag) { Begin(tag); }
    ~ScopedMeasure() { End(); }
 };
-}
+} // namespace iProf
 
-std::ostream& operator<<(std::ostream& os, const InternalProfiler::Stats& stats);
+std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 
 #ifndef __FUNCTION_NAME__
 # ifdef _MSC_VER
@@ -174,8 +173,8 @@ std::ostream& operator<<(std::ostream& os, const InternalProfiler::Stats& stats)
 # endif
 #endif
 
-#define IPROF(n) InternalProfiler::ScopedMeasure InternalProfiler__##__COUNTER__(n)
-#define IPROF_FUNC InternalProfiler::ScopedMeasure InternalProfiler__##__COUNTER__(__FUNCTION_NAME__)
+#define IPROF(n) iProf::ScopedMeasure iProf__##__COUNTER__(n)
+#define IPROF_FUNC iProf::ScopedMeasure iProf__##__COUNTER__(__FUNCTION_NAME__)
 
 #else
 

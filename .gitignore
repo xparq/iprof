@@ -1,4 +1,7 @@
 *.out
+*.exe
+*.o
+*.obj
 *.user
 winBuild/.vs
 winBuild/obj
