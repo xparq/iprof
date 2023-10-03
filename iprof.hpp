@@ -7,64 +7,66 @@
 #ifndef IPROF_DISABLE
 
 #if (defined(_MSC_VER) && (_MSC_VER < 1916)) || defined(EMSCRIPTEN) || defined(CC_TARGET_OS_IPHONE) || defined(__ANDROID__)
-#define IPROF_DISABLE_MULTITHREAD
+# define IPROF_DISABLE_MULTITHREAD
 #endif
 
+#ifndef IPROF_DISABLE_OPTIM
+# include "tinyvector.hpp" // Fast, but very limited vector impl.
+#endif
+#include <vector> // std::vector is needed anyway for other things
 #include <map>
 #ifndef IPROF_DISABLE_MULTITHREAD
-#include <mutex>
+# include <mutex>
 #endif
 #include <ostream>
-#include <vector>
-
 #include "hitime.hpp"
 
 #ifdef IPROF_DISABLE_MULTITHREAD
 // For MSVC: __declspec(thread) doesn't work for things with a constructor
-#define iprof_thread_local
+# define iprof_thread_local
 #else
-#define iprof_thread_local thread_local
+# define iprof_thread_local thread_local
 #endif
 
 namespace iProf
 {
-/// A faster (for storing within a vector) but limited vector<const char *>
 #ifndef IPROF_DISABLE_OPTIM
-#include "tinyvector.hpp"
-typedef TinyVector<const char*, 14> Stack;
+   typedef TinyVector<const char*, 15> TagList;
+      // With 15, sizeof == 64 (15*4 + 2 + 2) for 32-bit systems,
+      // and should be (aligned to) 128 for 64-bit systems.
 #else
-typedef std::vector<const char*> Stack;
+   typedef std::vector<const char*> TagList;
 #endif
 
 struct RawEntry
 {
-   Stack scopes;
-   HighResClock::time_point start;
-   HighResClock::time_point end;
+   TagList scopePath;
+   HighResClock::time_point tStart;
+   HighResClock::time_point tStop;
 };
 
 struct Totals
 {
-   HighResClock::duration totalTime = HighResClock::duration::zero();
-   size_t numVisits = 0;
+   HighResClock::duration tTotal = HighResClock::duration::zero();
+   size_t nVisits = 0;
    Totals& operator+=(const Totals& a)
    {
-      totalTime += a.totalTime;
-      numVisits += a.numVisits;
+      tTotal += a.tTotal;
+      nVisits += a.nVisits;
       return *this;
    }
    Totals& operator-=(const Totals& a)
    {
-      totalTime -= a.totalTime;
-      numVisits -= a.numVisits;
+      tTotal -= a.tTotal;
+      nVisits -= a.nVisits;
       return *this;
    }
 };
 
-extern iprof_thread_local Stack scopes;
-extern iprof_thread_local std::vector<RawEntry> entries;
-typedef std::map<Stack, Totals> Stats;   // we lack hashes for unordered
+typedef std::map<TagList, Totals> Stats;   // we lack hashes for unordered
 extern iprof_thread_local Stats stats;
+extern iprof_thread_local std::vector<RawEntry> entries;
+extern iprof_thread_local TagList currentScopePath;
 
 #ifndef IPROF_DISABLE_MULTITHREAD
 extern std::mutex allThreadStatLock;
@@ -74,26 +76,26 @@ extern Stats allThreadStats;
 void aggregateEntries();
 void addThisThreadEntriesToAllThreadStats();
 
-inline void Begin(const char* tag)
+inline void Start(const char* tag)
 {
-   scopes.push_back(tag);
+   currentScopePath.push_back(tag);
    auto now = HighResClock::now();
-   entries.emplace_back(RawEntry{scopes, now, now - HighResClock::duration(1)});
+   entries.emplace_back(RawEntry{currentScopePath, now, now - HighResClock::duration(1)}); // set to an invalid interval initially
 }
-inline void End()
+inline void Stop()
 {
-   auto s = scopes.size();
+   auto depth = currentScopePath.size();
    auto rei = entries.rbegin();
-   while (rei->scopes.size() != s)
+   while (rei->scopePath.size() != depth)
       ++rei;
-   rei->end = HighResClock::now();
-   scopes.pop_back();
+   rei->tStop = HighResClock::now();
+   currentScopePath.pop_back();
 }
 
 struct ScopedMeasure
 {
-   ScopedMeasure(const char* tag) { Begin(tag); }
-   ~ScopedMeasure() { End(); }
+   ScopedMeasure(const char* tag) { Start(tag); }
+   ~ScopedMeasure() { Stop(); }
 };
 } // namespace iProf
 

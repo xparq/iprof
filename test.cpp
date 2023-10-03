@@ -72,9 +72,7 @@ int main()
 {
    auto startTime = HighResClock::now();
 
-   cout << "Hi ;)\n" << endl;
-
-   cout << "sizeof(iProf::Stack): " << sizeof(iProf::Stack)
+   cout << "sizeof(iProf::TagList): " << sizeof(iProf::TagList)
         << " bytes" << endl;
 
    cout << "\nAnd the lucky double is: " << heavyCalc() << endl;
@@ -120,6 +118,6 @@ int main()
 #endif
 
    cout << "The test took " << MILLI_SECS(HighResClock::now() - startTime)
-        << " milliseconds\nGoodbye" << endl;
+        << " milliseconds\n" << endl;
    return 0;
 }

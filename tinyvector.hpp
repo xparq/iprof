@@ -8,8 +8,6 @@
 #include <string.h>
 
 template <typename T, unsigned MAX_SIZE = 15>
-   // With 15, sizeof == 64 (15*4 + 2 + 2) for 32-bit systems,
-   // and should be (aligned to) 128 for 64-bit systems.
 class TinyVector
 {
 public:

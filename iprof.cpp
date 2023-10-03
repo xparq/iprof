@@ -6,9 +6,9 @@
 
 namespace iProf
 {
-iprof_thread_local Stack scopes;
-iprof_thread_local std::vector<RawEntry> entries;
 iprof_thread_local Stats stats;
+iprof_thread_local std::vector<RawEntry> entries;
+iprof_thread_local TagList currentScopePath;
 
 #ifndef IPROF_DISABLE_MULTITHREAD
 std::mutex allThreadStatLock;
@@ -22,14 +22,14 @@ void aggregateEntries()
       unfinished.reserve(entries.size() >> 1);
    for (auto ei : entries)
    {
-      if (ei.start > ei.end)
+      if (ei.tStart > ei.tStop)
       {
          unfinished.emplace_back(ei);
          continue;
       }
-      Totals& s = stats[ei.scopes];
-      ++s.numVisits;
-      s.totalTime += ei.end - ei.start;
+      Totals& s = stats[ei.scopePath];
+      ++s.nVisits;
+      s.tTotal += ei.tStop - ei.tStart;
    }
    std::swap(entries, unfinished);
 }
@@ -50,15 +50,15 @@ void addThisThreadEntriesToAllThreadStats()
 
 std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats)
 {
-   for (auto [scope_path, totals] : stats)
+   for (auto [path, data] : stats)
    {
-      for (auto& scope : scope_path)
-         os << scope << (&scope != &path.back() ? "/" : "");
+      for (auto& tag : path)
+         os << tag << (&tag != &path.back() ? "/" : "");
       if (path.capacity() < path.size())
          os << "/...(" << path.size() - path.capacity() << ")";
-      os << ": " << MICRO_SECS(totals.totalTime) / float(totals.numVisits)
-         << " μs (" << MICRO_SECS(totals.totalTime)
-         << " μs / " << totals.numVisits << ")\n";
+      os << ": " << MICRO_SECS(data.tTotal) / float(data.nVisits)
+         << " μs (" << MICRO_SECS(data.tTotal)
+         << " μs / " << data.nVisits << ")\n";
    }
    return os;
 }
