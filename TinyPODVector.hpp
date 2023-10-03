@@ -8,7 +8,7 @@
 #include <string.h>
 
 template <typename T, unsigned MAX_SIZE = 15>
-class TinyVector
+class TinyPODVector
 {
 public:
 	typedef uint16_t size_type;
@@ -49,24 +49,26 @@ public:
 	const value_type* end() const { return items + tail; }
 	const value_type& back() const { return *(items + tail - 1); }
 
-	bool operator==(const TinyVector& a) const
+	//! NOTE: If, for example, T == const char* (or any pointer), we are
+	//! just comparing the pointers below!
+	//! The usefulness of this depends on the compiler putting all
+	//! the equivalent const char* string literals under the same
+	//! pointer, which is of course not guaranteed by the specification.
+	//! E.g. items added by inline functions might be a problem for this,
+	//! as they might be treated as different functions across different
+	//! translation units...
+
+	bool operator==(const TinyPODVector& a) const
 	{
 		return size() == a.size() && 0 == memcmp(items, a.items, sizeof(value_type) * tail);
 	}
 
-	bool operator<(const TinyVector& a) const
+	bool operator<(const TinyPODVector& a) const
 	{
 		if (size() < a.size())
 			return true;
 		else if (size() > a.size())
 			return false;
-
-		//! We are just comparing pointer values here.
-		//! The perfect correctness of this depends on compiler putting all
-		//! string literals (const char *) under the same pointer, which is
-		//! not guaranteed under the specification, thus inline functions
-		//! might be a problem for this, and might be treated as different
-		//! functions when looked at from different translation units!
 		return memcmp(items, a.items, sizeof(value_type) * tail) < 0;
 	}
-}; // class TinyVector
+}; // class TinyPODVector

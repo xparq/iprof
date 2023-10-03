@@ -11,7 +11,7 @@
 #endif
 
 #ifndef IPROF_DISABLE_OPTIM
-# include "tinyvector.hpp" // Fast, but very limited vector impl.
+# include "TinyPODVector.hpp" // Fast, but very limited POD container
 #endif
 #include <vector> // std::vector is needed anyway for other things
 #include <map>
@@ -31,7 +31,7 @@
 namespace iProf
 {
 #ifndef IPROF_DISABLE_OPTIM
-	typedef TinyVector<const char*, 15> TagList;
+	typedef TinyPODVector<const char*, 15> TagList;
 		// With 15, sizeof == 64 (15*4 + 2 + 2) for 32-bit systems,
 		// and should be (aligned to) 128 for 64-bit systems.
 #else
