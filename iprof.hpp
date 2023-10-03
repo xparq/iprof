@@ -31,36 +31,36 @@
 namespace iProf
 {
 #ifndef IPROF_DISABLE_OPTIM
-   typedef TinyVector<const char*, 15> TagList;
-      // With 15, sizeof == 64 (15*4 + 2 + 2) for 32-bit systems,
-      // and should be (aligned to) 128 for 64-bit systems.
+	typedef TinyVector<const char*, 15> TagList;
+		// With 15, sizeof == 64 (15*4 + 2 + 2) for 32-bit systems,
+		// and should be (aligned to) 128 for 64-bit systems.
 #else
-   typedef std::vector<const char*> TagList;
+	typedef std::vector<const char*> TagList;
 #endif
 
 struct RawEntry
 {
-   TagList scopePath;
-   HighResClock::time_point tStart;
-   HighResClock::time_point tStop;
+	TagList scopePath;
+	HighResClock::time_point tStart;
+	HighResClock::time_point tStop;
 };
 
 struct Totals
 {
-   HighResClock::duration tTotal = HighResClock::duration::zero();
-   size_t nVisits = 0;
-   Totals& operator+=(const Totals& a)
-   {
-      tTotal += a.tTotal;
-      nVisits += a.nVisits;
-      return *this;
-   }
-   Totals& operator-=(const Totals& a)
-   {
-      tTotal -= a.tTotal;
-      nVisits -= a.nVisits;
-      return *this;
-   }
+	HighResClock::duration tTotal = HighResClock::duration::zero();
+	size_t nVisits = 0;
+	Totals& operator+=(const Totals& a)
+	{
+		tTotal += a.tTotal;
+		nVisits += a.nVisits;
+		return *this;
+	}
+	Totals& operator-=(const Totals& a)
+	{
+		tTotal -= a.tTotal;
+		nVisits -= a.nVisits;
+		return *this;
+	}
 };
 
 typedef std::map<TagList, Totals> Stats;   // we lack hashes for unordered
@@ -78,24 +78,24 @@ void addThisThreadEntriesToAllThreadStats();
 
 inline void Start(const char* tag)
 {
-   currentScopePath.push_back(tag);
-   auto now = HighResClock::now();
-   entries.emplace_back(RawEntry{currentScopePath, now, now - HighResClock::duration(1)}); // set to an invalid interval initially
+	currentScopePath.push_back(tag);
+	auto now = HighResClock::now();
+	entries.emplace_back(RawEntry{currentScopePath, now, now - HighResClock::duration(1)}); // start with an invalid interval
 }
 inline void Stop()
 {
-   auto depth = currentScopePath.size();
-   auto rei = entries.rbegin();
-   while (rei->scopePath.size() != depth)
-      ++rei;
-   rei->tStop = HighResClock::now();
-   currentScopePath.pop_back();
+	auto depth = currentScopePath.size();
+	auto rei = entries.rbegin();
+	while (rei->scopePath.size() != depth)
+		++rei;
+	rei->tStop = HighResClock::now();
+	currentScopePath.pop_back();
 }
 
 struct ScopedMeasure
 {
-   ScopedMeasure(const char* tag) { Start(tag); }
-   ~ScopedMeasure() { Stop(); }
+	ScopedMeasure(const char* tag) { Start(tag); }
+	~ScopedMeasure() { Stop(); }
 };
 } // namespace iProf
 
@@ -116,8 +116,6 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 #define IPROF_FUNC iProf::ScopedMeasure _CONCAT_(iProf__,__COUNTER__)(__FUNCTION_NAME__)
 
 #else // IPROF_DISABLE
-
 # define IPROF(n)
 # define IPROF_FUNC
-
 #endif // IPROF_DISABLE
