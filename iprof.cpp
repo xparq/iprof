@@ -50,15 +50,15 @@ void addThisThreadEntriesToAllThreadStats()
 
 std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats)
 {
-   for (auto si : stats)
+   for (auto [scope_path, totals] : stats)
    {
-      for (auto& ti : si.first)
-         os << ti << (&ti != &si.first.back() ? "/" : "");
-      if (si.first.capacity() < si.first.size())
-         os << "/...(" << si.first.size() - si.first.capacity() << ")";
-      os << ": " << MICRO_SECS(si.second.totalTime) / float(si.second.numVisits)
-         << " μs (" << MICRO_SECS(si.second.totalTime)
-         << " μs / " << si.second.numVisits << ")\n";
+      for (auto& scope : scope_path)
+         os << scope << (&scope != &path.back() ? "/" : "");
+      if (path.capacity() < path.size())
+         os << "/...(" << path.size() - path.capacity() << ")";
+      os << ": " << MICRO_SECS(totals.totalTime) / float(totals.numVisits)
+         << " μs (" << MICRO_SECS(totals.totalTime)
+         << " μs / " << totals.numVisits << ")\n";
    }
    return os;
 }

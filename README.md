@@ -45,7 +45,7 @@ std::cout << "The latest internal profiler stats:\n"
           << iProf::stats << std::endl;
 ```
 
-On C++11 compilers with `thread_local` support iprof also handles gathering stats across many threads:
+If enabled (i.e. by default) iprof can also handle gathering stats across multiple threads:
 
 ```C++
 iProf::aggregateEntries();
@@ -95,7 +95,7 @@ A usage example is also provided in `test.cpp`.
 To build it with CLANG (typically on unixish systems):
 
 ```bash
-clang++ -O3 -Wall test.cpp iprof.cpp
+clang++ -O3 -Wall -std=c++17 test.cpp iprof.cpp
 ```
 
 You can of course use `g++` instead, if you wish.
@@ -103,7 +103,7 @@ You can of course use `g++` instead, if you wish.
 With MSVC:
 
 ```cmd
-cl /EHsc /O2 /W4 test.cpp iprof.cpp
+cl /EHsc /O2 /W4 /std:c++17 test.cpp iprof.cpp
 ```
 
 (An MSVS project to build the example was also provided by the [original upstream repo](https://gitlab.com/Neurochrom/iprof), under its `winBuild` directory.)
