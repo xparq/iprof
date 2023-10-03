@@ -109,8 +109,11 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 # endif
 #endif
 
-#define IPROF(n) iProf::ScopedMeasure iProf__##__COUNTER__(n)
-#define IPROF_FUNC iProf::ScopedMeasure iProf__##__COUNTER__(__FUNCTION_NAME__)
+#define _CONCAT_2_(a, b) a##b
+#define _CONCAT_(a, b) _CONCAT_2_(a, b)
+
+#define IPROF(n) iProf::ScopedMeasure _CONCAT_(iProf__,__COUNTER__)(n)
+#define IPROF_FUNC iProf::ScopedMeasure _CONCAT_(iProf__,__COUNTER__)(__FUNCTION_NAME__)
 
 #else // IPROF_DISABLE
 
