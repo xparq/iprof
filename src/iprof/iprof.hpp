@@ -9,11 +9,6 @@
 #define DISABLE_IPROF_MULTITHREAD
 #endif
 
-#ifndef DISABLE_IPROF_OPTIM
-#include <stdint.h>
-#include <string.h>
-#endif
-
 #include <map>
 #ifndef DISABLE_IPROF_MULTITHREAD
 #include <mutex>
@@ -34,70 +29,8 @@ namespace iProf
 {
 /// A faster (for storing within a vector) but limited vector<const char *>
 #ifndef DISABLE_IPROF_OPTIM
-class Stack
-{
-public:
-   typedef uint16_t size_type;
-   typedef const char* value_type;
-
-protected:
-   static const int MAX_DEPTH = 15;
-   // Should make sizeof(RawEntry) == 64 (15*4+2+2) for 32bit systems
-   // and compilers will align it to 128 for 64 bit systems.
-   value_type array[MAX_DEPTH];
-   size_type tail = 0;
-   size_type osize = 0;  ///< size with overflow
-
-public:
-   size_type size() const
-   {
-      return osize;
-   }
-
-   size_type capacity() const
-   {
-      return tail;
-   }
-
-   void push_back(value_type item)
-   {
-      ++osize;
-      if (tail >= MAX_DEPTH)
-         return;
-      array[tail++] = item;
-      return;
-   }
-
-   void pop_back()
-   {
-      if (--osize < MAX_DEPTH)
-         --tail;
-   }
-
-   const value_type* begin() const { return array; }
-   const value_type* end() const { return array + tail; }
-   const value_type& back() const { return *(array + tail - 1); }
-
-   bool operator==(const Stack& a) const
-   {
-      return size() == a.size() && 0 == memcmp(array, a.array, sizeof(value_type) * tail);
-   }
-
-   bool operator<(const Stack& a) const
-   {
-      if (size() < a.size())
-         return true;
-      else if (size() > a.size())
-         return false;
-      // We are just comparing pointer values here.
-      // The perfect correctness of this depends on compiler putting all
-      // string literals (const char *) under the same pointer, which is
-      // not guaranteed under the specification, thus inline functions
-      // might be a problem for this, and might be threated as different
-      // functions when looked at from different translation units.
-      return memcmp(array, a.array, sizeof(value_type) * tail) < 0;
-   }
-}; // class Stack
+#include "tinyvector.hpp"
+typedef TinyVector<const char*, 14> Stack;
 #else
 typedef std::vector<const char*> Stack;
 #endif
