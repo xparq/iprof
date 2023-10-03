@@ -1,16 +1,17 @@
 // Copyright (c) 2015-2019 Paweł Cichocki
+// Copyright (c) 2023 Szabolcs Szász
 // License: https://opensource.org/licenses/MIT
 
 #pragma once
 
-#ifndef DISABLE_IPROF
+#ifndef IPROF_DISABLE
 
 #if (defined(_MSC_VER) && (_MSC_VER < 1916)) || defined(EMSCRIPTEN) || defined(CC_TARGET_OS_IPHONE) || defined(__ANDROID__)
-#define DISABLE_IPROF_MULTITHREAD
+#define IPROF_DISABLE_MULTITHREAD
 #endif
 
 #include <map>
-#ifndef DISABLE_IPROF_MULTITHREAD
+#ifndef IPROF_DISABLE_MULTITHREAD
 #include <mutex>
 #endif
 #include <ostream>
@@ -18,7 +19,7 @@
 
 #include "hitime.hpp"
 
-#ifdef DISABLE_IPROF_MULTITHREAD
+#ifdef IPROF_DISABLE_MULTITHREAD
 // For MSVC: __declspec(thread) doesn't work for things with a constructor
 #define iprof_thread_local
 #else
@@ -28,7 +29,7 @@
 namespace iProf
 {
 /// A faster (for storing within a vector) but limited vector<const char *>
-#ifndef DISABLE_IPROF_OPTIM
+#ifndef IPROF_DISABLE_OPTIM
 #include "tinyvector.hpp"
 typedef TinyVector<const char*, 14> Stack;
 #else
@@ -65,7 +66,7 @@ extern iprof_thread_local std::vector<RawEntry> entries;
 typedef std::map<Stack, Totals> Stats;   // we lack hashes for unordered
 extern iprof_thread_local Stats stats;
 
-#ifndef DISABLE_IPROF_MULTITHREAD
+#ifndef IPROF_DISABLE_MULTITHREAD
 extern std::mutex allThreadStatLock;
 extern Stats allThreadStats;
 #endif
@@ -109,9 +110,9 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 #define IPROF(n) iProf::ScopedMeasure iProf__##__COUNTER__(n)
 #define IPROF_FUNC iProf::ScopedMeasure iProf__##__COUNTER__(__FUNCTION_NAME__)
 
-#else
+#else // IPROF_DISABLE
 
 # define IPROF(n)
 # define IPROF_FUNC
 
-#endif
+#endif // IPROF_DISABLE

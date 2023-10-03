@@ -30,38 +30,38 @@ You can also gather stats for any scope easily:
 // ...
 ```
 
-The statistics are gathered in the ```InternalProfiler::stats```.
+The statistics are gathered in the ```iProf::stats```.
 To make iprof performant (you don't want your profiler to perturb the measurements by being slow)
 the stats are not aggregated automatically. In an application that has a well defined main loop
 such as a game it is recommended to gather them once every main loop iteration.
-The stats can be aggregated using ```InternalProfiler::aggregateEntries()```.
+The stats can be aggregated using ```iProf::aggregateEntries()```.
 
 The stats can also be easily streamed out to text thanks to the provided << operator
 
 ```C++
-InternalProfiler::aggregateEntries();
+iProf::aggregateEntries();
 std::cout << "The latest internal profiler stats:\n"
-          << InternalProfiler::stats << std::endl;
+          << iProf::stats << std::endl;
 ```
 
 On modern compilers that support thread_local (for objects with a constructor without crashing)
 iprof also handles gathering stats across many threads:
 
 ```C++
-InternalProfiler::aggregateEntries();
-InternalProfiler::addThisThreadEntriesToAllThreadStats();
+iProf::aggregateEntries();
+iProf::addThisThreadEntriesToAllThreadStats();
 std::cout << "The latest internal profiler stats from across all threads:\n"
-          << InternalProfiler::allThreadStats << std::endl;
+          << iProf::allThreadStats << std::endl;
 ```
 
-In case some threads might be still aggregating stats use the ```InternalProfiler::allThreadStatLock```
+In case some threads might be still aggregating stats use the ```iProf::allThreadStatLock```
 mutex to guard the allThreadStats:
 
 ```C++
 {
-    std::lock_guard<std::mutex> bouncer(InternalProfiler::allThreadStatLock);
+    std::lock_guard<std::mutex> bouncer(iProf::allThreadStatLock);
     std::cout << "The latest internal profiler stats from across all threads:\n"
-              << InternalProfiler::allThreadStats << std::endl;
+              << iProf::allThreadStats << std::endl;
 }
 ```
 
@@ -103,9 +103,9 @@ A MSVS project to build the sample is provided under the ```winBuild``` director
 
 ### Additional options
 
-You can disable the multithreading functionality of iprof by defining ```DISABLE_IPROF_MULTITHREAD```.
-In case your call trees are very deep you might want to disable the constant length vector optimization by defining
-```DISABLE_IPROF_OPTIM```.
+You can disable the multithreading functionality of iprof by defining ```IPROF_DISABLE_MULTITHREAD```.
+In case your call trees are very deep you might want to disable the constant-length vector optimization by defining
+```IPROF_DISABLE_OPTIM```.
 
 ## Contributing
 

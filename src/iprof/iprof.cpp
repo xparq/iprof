@@ -1,4 +1,5 @@
 // Copyright (c) 2015-2019 Paweł Cichocki
+// Copyright (c) 2023 Szabolcs Szász
 // License: https://opensource.org/licenses/MIT
 
 #include "iprof.hpp"
@@ -9,7 +10,7 @@ iprof_thread_local Stack scopes;
 iprof_thread_local std::vector<RawEntry> entries;
 iprof_thread_local Stats stats;
 
-#ifndef DISABLE_IPROF_MULTITHREAD
+#ifndef IPROF_DISABLE_MULTITHREAD
 std::mutex allThreadStatLock;
 Stats allThreadStats;
 #endif
@@ -33,7 +34,7 @@ void aggregateEntries()
    std::swap(entries, unfinished);
 }
 
-#ifndef DISABLE_IPROF_MULTITHREAD
+#ifndef IPROF_DISABLE_MULTITHREAD
 void addThisThreadEntriesToAllThreadStats()
 {
    std::lock_guard<std::mutex> bouncer(allThreadStatLock);

@@ -89,7 +89,7 @@ int main()
    cout << "\nThe profiler stats after the second run:\n"
         << iProf::stats << endl;
 
-#ifndef DISABLE_IPROF_MULTITHREAD
+#ifndef IPROF_DISABLE_MULTITHREAD
    cout << "Let's try a multithread environment" << endl;
 
    iProf::addThisThreadEntriesToAllThreadStats();
