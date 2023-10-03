@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <cstddef>
-#include <cstring>
+#include <stdint.h>
+#include <string.h>
 
 template <typename T, unsigned MAX_SIZE = 15>
    // With 15, sizeof == 64 (15*4 + 2 + 2) for 32-bit systems,

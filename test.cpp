@@ -25,6 +25,8 @@ double hugePower()
 {
    IPROF_FUNC;
 
+   IPROF("Outer; see issue #1!");
+
    double ret = 2;
    {
       IPROF("FirstPowerLoop");
