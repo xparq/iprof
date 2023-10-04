@@ -10,8 +10,8 @@
 # define IPROF_DISABLE_MULTITHREAD
 #endif
 
-#ifndef IPROF_DISABLE_OPTIM
-# include "TinyPODVector.hpp" // Fast, but very limited POD container
+#ifndef IPROF_DISABLE_VECTOR_OPT
+# include "lossyvector.hpp" // vector replacement optimized for use in std::map
 #endif
 #include <vector> // std::vector is needed anyway for other things
 #include <map>
@@ -30,8 +30,8 @@
 
 namespace iProf
 {
-#ifndef IPROF_DISABLE_OPTIM
-	typedef TinyPODVector<const char*, 15> TagList;
+#ifndef IPROF_DISABLE_VECTOR_OPT
+	typedef LossyVector<const char*, 15> TagList;
 		// With 15, sizeof == 64 (15*4 + 2 + 2) for 32-bit systems,
 		// and should be (aligned to) 128 for 64-bit systems.
 #else

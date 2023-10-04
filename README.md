@@ -113,7 +113,7 @@ cl /EHsc /O2 /W4 /std:c++17 test.cpp iprof.cpp
 - You can disable the multithreading functionality of iprof by defining `IPROF_DISABLE_MULTITHREAD`.
 
 - In case your scopes are nested way too deep (more than 15), you might want to disable the constant-length vector optimization by defining
-`IPROF_DISABLE_OPTIM`. You should also call the police and turn yourself in.
+`IPROF_DISABLE_VECTOR_OPT`. You should also call the police and turn yourself in.
 
 ## Contributing
 
