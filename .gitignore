@@ -3,6 +3,7 @@
 *.o
 *.obj
 *.user
+*.tmp
 winBuild/.vs
 winBuild/obj
 builds/

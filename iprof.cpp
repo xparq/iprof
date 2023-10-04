@@ -2,12 +2,14 @@
 // Copyright (c) 2023 Szabolcs Szász
 // License: https://opensource.org/licenses/MIT
 
+//#define IPROF_DISABLE_MULTITHREAD // Testing #12
+//#define IPROF_DISABLE_VECTOR_OPT // Testing #13
 #include "iprof.hpp"
 
 namespace iProf
 {
 iprof_thread_local Stats stats;
-iprof_thread_local std::vector<Measurement> measurements;
+iprof_thread_local Measurements measurements;
 iprof_thread_local TagList currentScopePath;
 
 #ifndef IPROF_DISABLE_MULTITHREAD
@@ -34,6 +36,17 @@ void aggregateEntries()
 	std::swap(measurements, unfinished);
 }
 
+void clear()
+{
+	measurements.clear();
+	for (auto& [path, stat] : stats) {
+		stats[path] = Totals{HiResTime::duration(0), 0};
+#ifndef IPROF_DISABLE_MULTITHREAD
+		allThreadStats[path] = Totals{HiResTime::duration(0), 0};
+#endif
+	}
+}
+
 #ifndef IPROF_DISABLE_MULTITHREAD
 void addThisThreadEntriesToAllThreadStats()
 {
@@ -56,8 +69,8 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats)
 			os << tag << (&tag != &path.back() ? "/" : "");
 		if (path.capacity() < path.size())
 			os << "/...(" << path.size() - path.capacity() << ")";
-		os << ": " << iProf::HRTime::MICROSEC(data.tTotal) / float(data.nVisits)
-			<< " μs (" << iProf::HRTime::MICROSEC(data.tTotal)
+		os << ": " << iProf::HiResTime::MICROSEC(data.tTotal) / float(data.nVisits)
+			<< " μs (" << iProf::HiResTime::MICROSEC(data.tTotal)
 			<< " μs / " << data.nVisits << ")\n";
 	}
 	return os;

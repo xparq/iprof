@@ -6,7 +6,7 @@ The iprof library let's you measure the performance of your C++ code in real tim
 
 First, include `iprof.hpp`.
 
-Then at the start of any function you want to measure, add the `IPROF_FUNC` macro:
+Then in any function you want to measure, add the `IPROF_FUNC` macro:
 
 ```C++
 #include "iprof.hpp"
@@ -20,6 +20,8 @@ void suspectedPerformanceCulprit()
 }
 ```
 
+(Note: it will measure the chunk between the macro and the end of the function.)
+
 You can also gather stats for any other scope easily:
 
 ```C++
@@ -31,37 +33,37 @@ You can also gather stats for any other scope easily:
 // ...
 ```
 
-The statistics are gathered in `iProf::stats`.
+The statistics are gathered in `IPROF_STATS`.
 To make iprof performant (you don't want your profiler to perturb the measurements by being slow)
 the stats are not aggregated automatically. In an application that has a well-defined main loop,
 such as a game, it is recommended to gather them once every main loop iteration.
-The stats can be aggregated using `iProf::aggregateEntries()`.
+The stats can be aggregated using `IPROF_SYNC`.
 
 The stats can also be easily streamed out to text, thanks to the provided `<<` operator:
 
 ```C++
-iProf::aggregateEntries();
-std::cout << "The latest internal profiler stats:\n"
-          << iProf::stats << std::endl;
+IPROF_SYNC;
+std::cerr << "The latest internal profiler stats:\n"
+          << IPROF_STATS << '\n;
 ```
 
-If enabled (i.e. by default) iprof can also handle gathering stats across multiple threads:
+If enabled (i.e. by default) iprof can also handle gathering stats across multiple threads, like:
 
 ```C++
-iProf::aggregateEntries();
-iProf::addThisThreadEntriesToAllThreadStats();
-std::cout << "The latest internal profiler stats from across all threads:\n"
-          << iProf::allThreadStats << std::endl;
+IPROF_SYNC;
+IPROF_THREAD_SYNC;
+std::cerr << "The latest internal profiler stats from across all threads:\n"
+          << IPROF_ALL_THREAD_STATS << '\n';
 ```
 
 In case some threads might be still aggregating stats, use the ```iProf::allThreadStatLock```
-mutex to guard `allThreadStats`:
+mutex to guard `IPROF_ALL_THREAD_STATS`:
 
 ```C++
 {
     std::lock_guard<std::mutex> bouncer(iProf::allThreadStatLock);
     std::cout << "The latest internal profiler stats from across all threads:\n"
-              << iProf::allThreadStats << std::endl;
+              << IPROF_ALL_THREAD_STATS << '\n';
 }
 ```
 
@@ -108,11 +110,13 @@ cl /EHsc /O2 /W4 /std:c++17 test.cpp iprof.cpp
 
 (An MSVS project to build the example was also provided by the [original upstream repo](https://gitlab.com/Neurochrom/iprof), under its `winBuild` directory.)
 
-### Additional options
+### Options
 
-- You can disable the multithreading functionality of iprof by defining `IPROF_DISABLE_MULTITHREAD`.
+- By defining `IPROF_DISABLE` (before including iprof.hpp) all of iprof will be omitted form the compilation; the `IPROF_...` macros will be defined empty (still passing through their arguments, though, so compilation without iprof would not introduce difficult-to-find subtle bugs).
 
-- In case your scopes are nested way too deep (more than 15), you might want to disable the constant-length vector optimization by defining
+- You can disable the multithreading functionality by defining `IPROF_DISABLE_MULTITHREAD`.
+
+- In case your scopes are nested way too deep (more than 15), you might want to disable the constant-length vector optimization with
 `IPROF_DISABLE_VECTOR_OPT`. You should also call the police and turn yourself in.
 
 ## Contributing

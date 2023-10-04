@@ -45,6 +45,8 @@ namespace HiResTime
 #endif // _MSC_VER
 
 	using duration = Clock::duration;
+	using time_point = Clock::time_point;
+	inline auto now() { return Clock::now(); }
 
 	inline auto MICROSEC(const duration& x) { return std::chrono::duration_cast<std::chrono::microseconds>(x).count(); } //!! rename to microseconds()
 	inline auto MILLISEC(const duration& x) { return std::chrono::duration_cast<std::chrono::milliseconds>(x).count(); } //!! rename to milliseconds()

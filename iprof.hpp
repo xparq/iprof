@@ -37,10 +37,6 @@
 namespace iProf
 {
 	#include "hirestime.hpp" // See comment above...
-	// To avoid conflicts between HiResTime vs iProf::HiResTime, depending
-	// on whether the user has also included it, we use HRTime internally:
-	namespace HRTime = HiResTime;
-	using HRClock = HRTime::Clock;
 
 #ifndef IPROF_DISABLE_VECTOR_OPT
 	typedef LossyVector<const char*, 15> TagList;
@@ -53,19 +49,19 @@ namespace iProf
 struct Measurement
 {
 	TagList scopePath;
-	HiResTime::Clock::time_point tStart, tStop;
+	HiResTime::time_point tStart, tStop;
 
 	Measurement(const TagList& path) :
 		scopePath(path),
-		tStart(HiResTime::Clock::now()),
-		tStop(tStart - HiResTime::Clock::duration(1)) // invalid interval means running()
+		tStart(HiResTime::now()),
+		tStop(tStart - HiResTime::duration(1)) // invalid interval means running()
 	{}
 	constexpr bool running() { return tStart > tStop; }
 };
 
 struct Totals
 {
-	HiResTime::Clock::duration tTotal = HiResTime::Clock::duration::zero();
+	HiResTime::duration tTotal = HiResTime::duration::zero();
 	size_t nVisits = 0;
 
 	Totals& operator+=(const Totals& a)
@@ -83,8 +79,9 @@ struct Totals
 };
 
 typedef std::map<TagList, Totals> Stats;   // we lack hashes for unordered
+typedef std::vector<Measurement> Measurements;
 extern iprof_thread_local Stats stats;
-extern iprof_thread_local std::vector<Measurement> measurements;
+extern iprof_thread_local Measurements measurements; //!!?? Why was this one not thread-local?
 extern iprof_thread_local TagList currentScopePath;
 
 #ifndef IPROF_DISABLE_MULTITHREAD
@@ -94,6 +91,7 @@ extern Stats allThreadStats;
 
 void aggregateEntries();
 void addThisThreadEntriesToAllThreadStats();
+void clear();
 
 inline void Start(const char* tag)
 {
@@ -107,7 +105,7 @@ inline void Stop()
 	auto m = measurements.rbegin();
 	while (m->scopePath.size() != depth)
 		++m;
-	m->tStop = HiResTime::Clock::now();
+	m->tStop = HiResTime::now();
 	currentScopePath.pop_back();
 }
 
@@ -116,6 +114,11 @@ struct ScopedMeasure
 	ScopedMeasure(const char* tag) { Start(tag); }
 	~ScopedMeasure() { Stop(); }
 };
+
+
+// To avoid conflicts in the IPROF_ macros between HiResTime and
+// iProf::HiResTime, if the user has also included hirestime.hpp:
+namespace HRTime = HiResTime;
 } // namespace iProf
 
 std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
@@ -133,7 +136,7 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 
 #define IPROF(n) iProf::ScopedMeasure _IPROF_CONCAT_(iProf__,__COUNTER__)(n)
 #define IPROF_FUNC iProf::ScopedMeasure _IPROF_CONCAT_(iProf__,__COUNTER__)(__FUNCTION_NAME__)
-#define IPROF_UPDATE      iProf::aggregateEntries()
+#define IPROF_SYNC iProf::aggregateEntries()
 #define IPROF_SYNC_THREAD iProf::addThisThreadEntriesToAllThreadStats()
 /*!!
 #ifdef ...IPROF_DISABLE_MULTITHREAD?? -> #9
@@ -146,7 +149,7 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 !!*/
 #define IPROF_STATS       iProf::stats //!! AFAICU, this is not valid in multi-threaded runs: IPROF_SYNC_THREAD kills it!
 #define IPROF_ALL_THREAD_STATS iProf::allThreadStats
-#define IPROF_NOW         iProf::HRClock::now()
+#define IPROF_NOW         iProf::HRTime::now()
 #define IPROF_MICROSEC(x) iProf::HRTime::MICROSEC(x)
 #define IPROF_MILLISEC(x) iProf::HRTime::MILLISEC(x)
 #define IPROF_SEC(x)      iProf::HRTime::SEC(x)
@@ -155,7 +158,7 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 # define IPROF(n)
 # define IPROF_FUNC
 # define IPROF_NOW         (0)
-# define IPROF_UPDATE      void(0)
+# define IPROF_SYNC        void(0)
 # define IPROF_SYNC_THREAD void(0)
 # define IPROF_STATS       (0)
 # define IPROF_ALL_THREAD_STATS (0)
