@@ -5,6 +5,7 @@
 #include <future>
 #include <iostream>
 
+//#define IPROF_DISABLE // -> Issue #5
 #include "iprof.hpp"
 
 using namespace std;
@@ -70,10 +71,12 @@ double heavyCalc()
 //----------------------------------------------------------------------------
 int main()
 {
-	auto startTime = HighResClock::now();
+	auto startTime = iProf::HighResClock::now();
 
+#ifndef IPROF_DISABLE
 	cout << "sizeof(iProf::TagList): " << sizeof(iProf::TagList)
 	     << " bytes" << endl;
+#endif
 
 	cout << "\nAnd the lucky double is: " << heavyCalc() << endl;
 
@@ -117,7 +120,7 @@ int main()
 	cout << "iprof multithreading disabled\n" << endl;
 #endif
 
-	cout << "The test took " << MILLI_SECS(HighResClock::now() - startTime)
+	cout << "The test took " << iProf::MILLISEC(iProf::HighResClock::now() - startTime)
 	     << " milliseconds\n" << endl;
 	return 0;
 }

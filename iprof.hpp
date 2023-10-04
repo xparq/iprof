@@ -10,16 +10,16 @@
 # define IPROF_DISABLE_MULTITHREAD
 #endif
 
+#include "hitime.hpp"
 #ifndef IPROF_DISABLE_VECTOR_OPT
 # include "lossyvector.hpp" // vector replacement optimized for use in std::map
 #endif
-#include <vector> // std::vector is needed anyway for other things
+#include <vector> // needed anyway for other things
 #include <map>
 #ifndef IPROF_DISABLE_MULTITHREAD
 # include <mutex>
 #endif
 #include <ostream>
-#include "hitime.hpp"
 
 #ifdef IPROF_DISABLE_MULTITHREAD
 // For MSVC: __declspec(thread) doesn't work for things with a constructor
@@ -38,17 +38,24 @@ namespace iProf
 	typedef std::vector<const char*> TagList;
 #endif
 
-struct RawEntry
+struct Measurement
 {
 	TagList scopePath;
-	HighResClock::time_point tStart;
-	HighResClock::time_point tStop;
+	HighResClock::time_point tStart, tStop;
+
+	Measurement(const TagList& path) :
+		scopePath(path),
+		tStart(HighResClock::now()),
+		tStop(tStart - HighResClock::duration(1)) // invalid interval means running()
+	{}
+	constexpr bool running() { return tStart > tStop; }
 };
 
 struct Totals
 {
 	HighResClock::duration tTotal = HighResClock::duration::zero();
 	size_t nVisits = 0;
+
 	Totals& operator+=(const Totals& a)
 	{
 		tTotal += a.tTotal;
@@ -65,7 +72,7 @@ struct Totals
 
 typedef std::map<TagList, Totals> Stats;   // we lack hashes for unordered
 extern iprof_thread_local Stats stats;
-extern iprof_thread_local std::vector<RawEntry> entries;
+extern iprof_thread_local std::vector<Measurement> measurements;
 extern iprof_thread_local TagList currentScopePath;
 
 #ifndef IPROF_DISABLE_MULTITHREAD
@@ -79,16 +86,16 @@ void addThisThreadEntriesToAllThreadStats();
 inline void Start(const char* tag)
 {
 	currentScopePath.push_back(tag);
-	auto now = HighResClock::now();
-	entries.emplace_back(RawEntry{currentScopePath, now, now - HighResClock::duration(1)}); // start with an invalid interval
+	measurements.emplace_back(Measurement{currentScopePath});
+//	measurements.emplace_back(currentScopePath); // This seemed consistently slower with CLANG! :-o
 }
 inline void Stop()
 {
 	auto depth = currentScopePath.size();
-	auto rei = entries.rbegin();
-	while (rei->scopePath.size() != depth)
-		++rei;
-	rei->tStop = HighResClock::now();
+	auto m = measurements.rbegin();
+	while (m->scopePath.size() != depth)
+		++m;
+	m->tStop = HighResClock::now();
 	currentScopePath.pop_back();
 }
 
@@ -109,11 +116,11 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 # endif
 #endif
 
-#define _CONCAT_2_(a, b) a##b
-#define _CONCAT_(a, b) _CONCAT_2_(a, b)
+#define _IPROF_CONCAT_2_(a, b) a##b
+#define _IPROF_CONCAT_(a, b) _IPROF_CONCAT_2_(a, b)
 
-#define IPROF(n) iProf::ScopedMeasure _CONCAT_(iProf__,__COUNTER__)(n)
-#define IPROF_FUNC iProf::ScopedMeasure _CONCAT_(iProf__,__COUNTER__)(__FUNCTION_NAME__)
+#define IPROF(n) iProf::ScopedMeasure _IPROF_CONCAT_(iProf__,__COUNTER__)(n)
+#define IPROF_FUNC iProf::ScopedMeasure _IPROF_CONCAT_(iProf__,__COUNTER__)(__FUNCTION_NAME__)
 
 #else // IPROF_DISABLE
 # define IPROF(n)
