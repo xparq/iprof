@@ -56,8 +56,8 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats)
 			os << tag << (&tag != &path.back() ? "/" : "");
 		if (path.capacity() < path.size())
 			os << "/...(" << path.size() - path.capacity() << ")";
-		os << ": " << iProf::MICROSEC(data.tTotal) / float(data.nVisits)
-			<< " μs (" << iProf::MICROSEC(data.tTotal)
+		os << ": " << iProf::HRTime::MICROSEC(data.tTotal) / float(data.nVisits)
+			<< " μs (" << iProf::HRTime::MICROSEC(data.tTotal)
 			<< " μs / " << data.nVisits << ")\n";
 	}
 	return os;
