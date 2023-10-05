@@ -191,10 +191,10 @@ int run_without_iprof()
 	cout << "Let's try a multithreaded environment" << endl;
 
 	auto load = [] {
-		cout << heavyCalc_noprofile() << endl;
 //		static std::mutex lock;
 //		std::lock_guard<std::mutex> bouncer(lock);
 //		std::lock_guard<std::mutex> bouncer(iProf::allThreadStatLock);
+		cout << heavyCalc_noprofile() << endl;
 	};
 
 	auto futureLucky = std::async(load);

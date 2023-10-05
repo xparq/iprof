@@ -21,14 +21,13 @@
 #include <ostream>
 
 #ifdef IPROF_DISABLE_MULTITHREAD
-// For MSVC: __declspec(thread) doesn't work for things with a constructor
 # define iprof_thread_local
 #else
 # define iprof_thread_local thread_local
 #endif
 
-// windows.h and <chrono> can't survive including it from within a namespace,
-// se we must do this prior to including (embedding, actually!) the clock stuff:
+// windows.h and <chrono> can't survive including from within a namespace, so
+// we must do this prior to including (actually: embedding) the clock stuff:
 #include <chrono>
 #ifdef _MSC_VER
 # include <Windows.h>
@@ -85,11 +84,11 @@ extern iprof_thread_local Measurements measurements; //!!?? Why was this one not
 extern iprof_thread_local TagList currentScopePath;
 
 #ifndef IPROF_DISABLE_MULTITHREAD
-extern std::mutex allThreadStatLock;
 extern Stats allThreadStats;
+extern std::mutex allThreadStatLock;
 #endif
 
-void aggregateEntries();
+void accumulateLatestMeasurements();
 void addThisThreadEntriesToAllThreadStats();
 void clear();
 
@@ -101,10 +100,11 @@ inline void Start(const char* tag)
 }
 inline void Stop()
 {
+	// Find the corresponding measurement
 	auto depth = currentScopePath.size();
-	auto m = measurements.rbegin();
-	while (m->scopePath.size() != depth)
-		++m;
+	auto m = measurements.end();
+	do --m; while (m->scopePath.size() != depth);
+
 	m->tStop = HiResTime::now();
 	currentScopePath.pop_back();
 }
@@ -136,8 +136,8 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 
 #define IPROF(n) iProf::ScopedMeasure _IPROF_CONCAT_(iProf__,__COUNTER__)(n)
 #define IPROF_FUNC iProf::ScopedMeasure _IPROF_CONCAT_(iProf__,__COUNTER__)(__FUNCTION_NAME__)
-#define IPROF_SYNC iProf::aggregateEntries()
-#define IPROF_SYNC_THREAD iProf::addThisThreadEntriesToAllThreadStats()
+#define IPROF_SYNC iProf::accumulateLatestMeasurements()
+#define IPROF_SYNC_THREAD { IPROF_SYNC; iProf::addThisThreadEntriesToAllThreadStats(); }
 /*!!
 #ifdef ...IPROF_DISABLE_MULTITHREAD?? -> #9
 # define IPROF_STATS        iProf::stats
@@ -147,22 +147,22 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 //!!# define IPROF_THREAD_STATS iProf::stats
 #endif
 !!*/
-#define IPROF_STATS       iProf::stats //!! AFAICU, this is not valid in multi-threaded runs: IPROF_SYNC_THREAD kills it!
+#define IPROF_STATS        iProf::stats //!! AFAICU, this is not valid in multi-threaded runs: IPROF_SYNC_THREAD kills it!
 #define IPROF_ALL_THREAD_STATS iProf::allThreadStats
-#define IPROF_NOW         iProf::HRTime::now()
-#define IPROF_MICROSEC(x) iProf::HRTime::MICROSEC(x)
-#define IPROF_MILLISEC(x) iProf::HRTime::MILLISEC(x)
-#define IPROF_SEC(x)      iProf::HRTime::SEC(x)
+#define IPROF_NOW          iProf::HRTime::now()
+#define IPROF_MICROSEC(x)  iProf::HRTime::MICROSEC(x)
+#define IPROF_MILLISEC(x)  iProf::HRTime::MILLISEC(x)
+#define IPROF_SEC(x)       iProf::HRTime::SEC(x)
 
 #else // IPROF_DISABLE
 # define IPROF(n)
 # define IPROF_FUNC
-# define IPROF_NOW         (0)
-# define IPROF_SYNC        void(0)
-# define IPROF_SYNC_THREAD void(0)
-# define IPROF_STATS       (0)
+# define IPROF_NOW          (0)
+# define IPROF_SYNC         void(0)
+# define IPROF_SYNC_THREAD  void(0)
+# define IPROF_STATS        (0)
 # define IPROF_ALL_THREAD_STATS (0)
-# define IPROF_MICROSEC(x) (0)
-# define IPROF_MILLISEC(x) (x) // Still process x, to avoid subtle nightmare bugs!
-# define IPROF_SEC(x)      (x) // Still process x, to avoid subtle nightmare bugs!
+# define IPROF_MICROSEC(x)  (0)
+# define IPROF_MILLISEC(x)  (x) // Still process x, to avoid subtle nightmare bugs!
+# define IPROF_SEC(x)       (x) // Still process x, to avoid subtle nightmare bugs!
 #endif // IPROF_DISABLE

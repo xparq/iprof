@@ -17,7 +17,7 @@ std::mutex allThreadStatLock;
 Stats allThreadStats;
 #endif
 
-void aggregateEntries()
+void accumulateLatestMeasurements()
 {
 	std::vector<Measurement> unfinished;
 	if (measurements.size() > 4)
@@ -36,21 +36,10 @@ void aggregateEntries()
 	std::swap(measurements, unfinished);
 }
 
-void clear()
-{
-	measurements.clear();
-	for (auto& [path, stat] : stats) {
-		stats[path] = Totals{HiResTime::duration(0), 0};
-#ifndef IPROF_DISABLE_MULTITHREAD
-		allThreadStats[path] = Totals{HiResTime::duration(0), 0};
-#endif
-	}
-}
-
 #ifndef IPROF_DISABLE_MULTITHREAD
 void addThisThreadEntriesToAllThreadStats()
 {
-	iprof_thread_local static Stats lastStats;
+	iprof_thread_local Stats lastStats;
 	std::lock_guard<std::mutex> bouncer(allThreadStatLock);
 	for (const auto& [path, stat] : lastStats)
 		allThreadStats[path] -= stat;
@@ -59,6 +48,18 @@ void addThisThreadEntriesToAllThreadStats()
 	lastStats = stats;
 }
 #endif
+
+void clear()
+{
+	measurements.clear();
+	for (auto& [path, stat] : stats)
+	{
+		stats[path] = Totals{HiResTime::duration(0), 0};
+#ifndef IPROF_DISABLE_MULTITHREAD
+		allThreadStats[path] = Totals{HiResTime::duration(0), 0};
+#endif
+	}
+}
 } // namespace iProf
 
 std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats)
