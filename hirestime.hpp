@@ -1,4 +1,5 @@
 // Copyright (c) 2015-2019 Paweł Cichocki
+// Copyright (c) 2023 Szabolcs Szász
 // License: https://opensource.org/licenses/MIT
 
 #pragma once

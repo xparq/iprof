@@ -37,7 +37,7 @@ void accumulateLatestMeasurements()
 }
 
 #ifndef IPROF_DISABLE_MULTITHREAD
-void addThisThreadEntriesToAllThreadStats()
+void addThisThreadEntriesToAllThreadStats() //!! Should be idempotent!
 {
 	iprof_thread_local Stats lastStats;
 	std::lock_guard<std::mutex> bouncer(allThreadStatLock);

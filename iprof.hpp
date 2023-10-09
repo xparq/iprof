@@ -77,12 +77,12 @@ struct Totals
 	}
 };
 
-typedef std::map<TagList, Totals> Stats;   // we lack hashes for unordered
+typedef std::map<TagList, Totals> Stats;   // LossyVector lacks hashing required by unordered_map
 typedef std::vector<Measurement> Measurements;
-extern iprof_thread_local Stats stats;
-extern iprof_thread_local Measurements measurements; //!!?? Why was this one not thread-local?
-extern iprof_thread_local TagList currentScopePath;
 
+extern iprof_thread_local Stats stats;
+extern iprof_thread_local Measurements measurements; //!!?? Why was this one not thread-local before?
+extern iprof_thread_local TagList currentScopePath;
 #ifndef IPROF_DISABLE_MULTITHREAD
 extern Stats allThreadStats;
 extern std::mutex allThreadStatLock;
@@ -92,18 +92,29 @@ void accumulateLatestMeasurements();
 void addThisThreadEntriesToAllThreadStats();
 void clear();
 
-inline void Start(const char* tag)
+
+inline const Stats& getStats()
+{
+// IPROF_SYNC
+	iProf::accumulateLatestMeasurements();
+// IPROF_SYNC_THREAD
+//!!	iProf::addThisThreadEntriesToAllThreadStats(); //!! NO, this can't help at the end, if we're in another thread already!
+
+	return stats;
+}
+
+inline void start(const char* tag)
 {
 	currentScopePath.push_back(tag);
 	measurements.emplace_back(Measurement{currentScopePath});
 //	measurements.emplace_back(currentScopePath); // This seemed consistently slower with CLANG! :-o
 }
-inline void Stop()
+inline void stop()
 {
-	// Find the corresponding measurement
+	// Find the pending measurement of the current scope
 	auto depth = currentScopePath.size();
 	auto m = measurements.end();
-	do --m; while (m->scopePath.size() != depth);
+	do --m; while (m->scopePath.size() != depth); // Skip possible newer ones in inner scopes
 
 	m->tStop = HiResTime::now();
 	currentScopePath.pop_back();
@@ -111,8 +122,8 @@ inline void Stop()
 
 struct ScopedMeasure
 {
-	ScopedMeasure(const char* tag) { Start(tag); }
-	~ScopedMeasure() { Stop(); }
+	ScopedMeasure(const char* tag) { start(tag); }
+	~ScopedMeasure() { stop(); }
 };
 
 
@@ -147,7 +158,8 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 //!!# define IPROF_THREAD_STATS iProf::stats
 #endif
 !!*/
-#define IPROF_STATS        iProf::stats //!! AFAICU, this is not valid in multi-threaded runs: IPROF_SYNC_THREAD kills it!
+#define IPROF_STATS        iProf::getStats() // See #17: not just `stats`, to support implicit syncing...
+                                             //!! AFAICU, IPROF_STATS is invalid in multi-threaded runs: IPROF_SYNC_THREAD kills it!
 #define IPROF_ALL_THREAD_STATS iProf::allThreadStats
 #define IPROF_NOW          iProf::HRTime::now()
 #define IPROF_MICROSEC(x)  iProf::HRTime::MICROSEC(x)
