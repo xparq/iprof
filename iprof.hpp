@@ -167,6 +167,7 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats);
 #define IPROF_SEC(x)       iProf::HRTime::SEC(x)
 
 #else // IPROF_DISABLE
+
 # define IPROF(n)
 # define IPROF_FUNC
 # define IPROF_NOW          (0)

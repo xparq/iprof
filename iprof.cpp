@@ -6,6 +6,8 @@
 //#define IPROF_DISABLE_VECTOR_OPT // Testing #13
 #include "iprof.hpp"
 
+#ifndef IPROF_DISABLE
+
 namespace iProf
 {
 iprof_thread_local Stats stats;
@@ -76,3 +78,5 @@ std::ostream& operator<<(std::ostream& os, const iProf::Stats& stats)
 	}
 	return os;
 }
+
+#endif // IPROF_DISABLE
